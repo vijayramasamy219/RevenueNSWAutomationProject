@@ -1,25 +1,42 @@
-name: QA Automation Pipeline
+name: Automation Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      API_KEY: ${{ secrets.API_KEY }}
+      APPIUM_SERVER_URL: ${{ secrets.APPIUM_SERVER_URL }}
+      ANDROID_DEVICE_NAME: ${{ secrets.ANDROID_DEVICE_NAME }}
+      ANDROID_APP_PATH: ${{ secrets.ANDROID_APP_PATH }}
+
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # 2️⃣ Set up JDK
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Chrome and chromedriver
+      # 3️⃣ Cache Maven dependencies
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+
+      # 4️⃣ Install Chrome + Chromedriver
+      - name: Install Chrome and Chromedriver
         run: |
           sudo apt-get update
           sudo apt-get install -y unzip xvfb libxi6 libgconf-2-4
@@ -31,9 +48,23 @@ jobs:
           unzip /tmp/chromedriver.zip -d /usr/local/bin
           sudo chmod +x /usr/local/bin/chromedriver
 
+      # 5️⃣ Build and run tests
       - name: Build and Run Tests
-        run: mvn test -B
+        run: mvn clean test -B
 
+      # 6️⃣ Generate Allure Report (optional)
+      - name: Generate Allure Report
+        run: mvn allure:report
+
+      # 7️⃣ Upload Allure Report
+      - name: Upload Allure Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: target/site/allure-maven-plugin
+
+      # 8️⃣ Upload Extent Report
       - name: Upload Extent Report
         if: always()
         uses: actions/upload-artifact@v4
@@ -41,9 +72,18 @@ jobs:
           name: extent-report
           path: target/extent-reports/ExtentReport.html
 
+      # 9️⃣ Upload Cucumber HTML Report
       - name: Upload Cucumber HTML Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cucumber-report
           path: target/cucumber-reports/cucumber.html
+
+      # 🔟 Upload Surefire Reports
+      - name: Upload Surefire Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports

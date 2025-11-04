@@ -40,10 +40,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            wget unzip curl xvfb libxi6 libnss3 libxss1 libappindicator3-1 \
-            libatk-bridge2.0-0 libgtk-3-0 libpangocairo-1.0-0 libcups2 \
-            libdbus-1-3 libxcomposite1 libxcursor1 libxdamage1 libxrandr2 \
-            libxinerama1 libfontconfig1 lsb-release gnupg
+          wget unzip curl xvfb libxi6 libnss3 libxss1 libappindicator3-1 \
+          libatk-bridge2.0-0 libgtk-3-0 libpangocairo-1.0-0 libcups2 \
+          libdbus-1-3 libxcomposite1 libxcursor1 libxdamage1 libxrandr2 \
+          libxinerama1 libfontconfig1 fonts-liberation
 
           wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-linux-signing-key.gpg
           echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux-signing-key.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
@@ -60,7 +60,15 @@ jobs:
 
           # Verify
           google-chrome --version
+          
+          echo "Checking Chromedriver installation..."
+          ls -l /usr/local/bin/chromedriver
           chromedriver --version
+          
+          - name: Test Chrome standalone
+          run: |
+            echo "Testing headless Chrome launch..."
+            google-chrome --headless --no-sandbox --disable-gpu --remote-debugging-port=9222 https://www.google.com
 
       # 5️⃣ Build and run tests
       - name: Build and Run Tests

@@ -39,14 +39,26 @@ jobs:
       - name: Install Chrome and Chromedriver
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip xvfb libxi6 libgconf-2-4
-          wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i /tmp/chrome.deb || sudo apt-get -f install -y
+          sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4 fonts-liberation libnss3 libxss1 libappindicator3-1 libatk-bridge2.0-0 libgtk-3-0
+
+          # Install Google Chrome stable
+          wget -q -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i /tmp/google-chrome.deb || sudo apt-get install -f -y
+
+          # Get Chrome version number
           CHROME_VER=$(google-chrome --version | awk '{print $3}' | cut -d. -f1)
-          LATEST=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VER")
-          wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${LATEST}/chromedriver_linux64.zip"
+          echo "Chrome version: $CHROME_VER"
+
+          # Download matching Chromedriver
+          LATEST=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VER")
+          echo "Chromedriver version: $LATEST"
+          wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$LATEST/chromedriver_linux64.zip"
           unzip /tmp/chromedriver.zip -d /usr/local/bin
           sudo chmod +x /usr/local/bin/chromedriver
+
+          # Check versions
+          google-chrome --version
+          chromedriver --version
 
       # 5️⃣ Build and run tests
       - name: Build and Run Tests
